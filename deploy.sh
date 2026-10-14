@@ -24,6 +24,20 @@ if [ "$LOCK_BEFORE" != "$LOCK_AFTER" ] || [ ! -d vendor ]; then
     fi
 fi
 
+# A fresh checkout has no .env, and a hand-made one often has no APP_KEY, which
+# 500s every request with MissingAppKeyException. Create and key it here so
+# a first deploy cannot go live half-configured.
+if [ ! -f .env ]; then
+    echo "→ creating .env from .env.example (production, debug off)"
+    cp .env.example .env
+    sed -i.bak 's/^APP_ENV=.*/APP_ENV=production/; s/^APP_DEBUG=.*/APP_DEBUG=false/' .env && rm -f .env.bak
+fi
+if ! grep -qE '^APP_KEY=.+' .env; then
+    echo "→ key:generate (APP_KEY was empty)"
+    php artisan key:generate --force
+fi
+touch database/database.sqlite
+
 echo "→ migrate"
 php artisan migrate --force
 
@@ -48,6 +62,6 @@ echo "→ verify"
 php artisan migrate:status | grep -q Pending && { echo "✗ migrations still pending"; exit 1; }
 [ -L public_html/storage ] || { echo "✗ public_html/storage link missing"; exit 1; }
 [ -w storage/logs ] || { echo "✗ storage/logs is not writable"; exit 1; }
-php artisan about --only=environment | grep -Ei 'debug.*(true|ENABLED)' && echo "⚠ APP_DEBUG is on in production"
+grep -qE '^APP_DEBUG=true' .env && echo "⚠ APP_DEBUG=true: stack traces are public. Set APP_DEBUG=false in .env and rerun."
 
 echo "✓ deployed $(git log --oneline -1)"
