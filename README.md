@@ -58,7 +58,7 @@ opposite places:
 | Script | Runs on | Purpose |
 |---|---|---|
 | `deploy.sh` | the **server** | `git pull`, composer install when the lockfile moved, migrate, storage link, caches, verify. `--releases` also imports uploaded game builds. |
-| `cx.sh` | your **local machine** | Menu: deploy (20/21), what's live (22), health (30), logs (31/32), publish a game build (40), releases and stats (41/42), backup (91), first-time server setup (01). |
+| `cx.sh` | your **local machine** | Menu: deploy (20/21), what's live (22), app key (27), health (30), logs (31/32), publish a game build (40), releases and stats (41/42), backup (91), first-time server setup (01). |
 
 `cx.sh` reads `vars.sh` (gitignored). Copy `vars.sh.example` to `vars.sh` and fill in the host, account
 and app path. Never copy `cx.sh` or `vars.sh` to the server.

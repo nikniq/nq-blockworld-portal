@@ -97,6 +97,7 @@ echo "23 : MIGRATIONS: status (what is pending on the server)"
 echo "24 : CACHES: refresh config/routes/views"
 echo "25 : CACHES: clear everything (when a cached value looks stale)"
 echo "26 : COMPOSER: install production dependencies"
+echo "27 : APP KEY: generate the encryption key on the server (fixes MissingAppKeyException)"
 echo ----------------------------------------------
 echo DIAGNOSE
 echo "30 : HEALTH: $APP_URL and the download page"
@@ -192,6 +193,27 @@ case "$SELECTION" in
   banner "COMPOSER: install production dependencies"
   remote_tty "composer install --no-dev --optimize-autoloader --no-interaction"
   log_history "Installed composer dependencies on $PROJECT"
+  ;;
+
+  "27" )
+  banner "APP KEY on $PROJECT"
+  # MissingAppKeyException on every request means .env has no APP_KEY.
+  # Rotating an existing key invalidates sessions, remember-me cookies and
+  # any encrypted values, so an existing key is kept unless you insist.
+  if remote "grep -qE '^APP_KEY=.+' .env" 2>/dev/null; then
+    echo "The server already has an APP_KEY."
+    confirm "Regenerating it logs every player out and breaks anything encrypted with the old key."
+  fi
+  remote_tty "test -f .env || cp .env.example .env; php artisan key:generate --force && php artisan optimize"
+  if remote "grep -qE '^APP_DEBUG=true' .env" 2>/dev/null; then
+    echo "⚠ APP_DEBUG=true on the server: errors show stack traces to the public."
+    read -r -p "Turn it off now? Type 'yes' to continue: " reply
+    if [ "$reply" = "yes" ]; then
+      remote "sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/; s/^APP_ENV=.*/APP_ENV=production/' .env && php artisan optimize"
+      echo "APP_DEBUG is now false."
+    fi
+  fi
+  log_history "Generated APP_KEY on $PROJECT"
   ;;
 
   #-------------------------------------------------------------
