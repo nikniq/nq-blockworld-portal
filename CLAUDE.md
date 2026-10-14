@@ -15,3 +15,10 @@ Auto-commit and push to GitHub (`origin main`) after every completed change, wit
 Run `php artisan test` and `vendor/bin/pint --test` first; only push if both pass.
 
 The web root is `public_html/` (not `public/`), set in `bootstrap/app.php` and `vite.config.js`.
+
+## Deployment
+Production is shared hosting with no Node (none needed). `deploy.sh` runs on the server (pull, composer if
+the lockfile moved, migrate, storage link, optimize, verify; `--releases` imports uploaded builds). `cx.sh`
+runs locally and drives the server over SSH from `vars.sh` (gitignored, see `vars.sh.example`); option 40
+uploads game builds from the game repo's `dist/` and seeds them. After pushing, remind the user to run
+`./cx.sh 20` (or `deploy.sh` on the server), since there is no SSH access from this environment.

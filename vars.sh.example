@@ -1,0 +1,26 @@
+#!/bin/bash
+# Settings for cx.sh (the LOCAL assistant for the Blockworld portal).
+#
+#   cp vars.sh.example vars.sh
+#
+# vars.sh is gitignored: it names hosts and accounts. This file holds placeholders only.
+
+# --- Identity ------------------------------------------------------------
+PROJECT="blockworld.example.com"      # site name; also the default app dir under ~/www/
+REMOTE_USER="your-siteground-user"
+REMOTE_HOST="your-host.siteground.biz"
+REMOTE="$REMOTE_USER@$REMOTE_HOST"
+REMOTE_PORT="18765"                   # SiteGround SSH is not on 22
+
+# App root on the server, relative to ~. deploy.sh, .env and storage/ live here.
+REMOTE_APP="www/$PROJECT"
+
+# Public URL, used by the health check so it covers DNS and TLS as well as PHP.
+APP_URL="https://$PROJECT"
+
+# Where the game repo writes packaged builds (cx.sh option 40 uploads from here).
+GAME_DIST="$HOME/repo/nq-blockworld/dist"
+
+# --- Tooling -------------------------------------------------------------
+APP_SSH="ssh -p $REMOTE_PORT"
+APP_SCP="scp -P $REMOTE_PORT"
