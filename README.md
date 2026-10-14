@@ -1,7 +1,7 @@
 # Blockworld Portal
 
 The website for [Blockworld](../nq-blockworld): introduces the game, serves the packaged builds,
-holds player profiles and lets players share their saved worlds. Laravel 13, SQLite by default,
+holds player profiles and lets players share their saved worlds. Laravel 13, SQLite by default, web root `public_html/`,
 plain Blade and a single stylesheet (no Node build step).
 
 ## Pages

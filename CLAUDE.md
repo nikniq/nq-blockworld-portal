@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Laravel 13 portal for the Blockworld game (sibling repo `../nq-blockworld`). No Node build: views are plain
-Blade under `resources/views`, styling is `public/css/app.css`.
+Blade under `resources/views`, styling is `public_html/css/app.css`.
 
 - Run: `php artisan serve`; tests: `php artisan test`; lint: `vendor/bin/pint`.
 - Releases are imported from the game repo's `dist/` by `ReleaseSeeder` (`php artisan db:seed`). Release
@@ -13,3 +13,5 @@ Blade under `resources/views`, styling is `public/css/app.css`.
 ## Git push
 Auto-commit and push to GitHub (`origin main`) after every completed change, without waiting to be told.
 Run `php artisan test` and `vendor/bin/pint --test` first; only push if both pass.
+
+The web root is `public_html/` (not `public/`), set in `bootstrap/app.php` and `vite.config.js`.
