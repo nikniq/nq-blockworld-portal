@@ -112,3 +112,7 @@ nav[role=navigation] svg { width: 1.2rem; height: 1.2rem; }
   .row { grid-template-columns: 1fr; }
   .profile-head { flex-direction: column; }
 }
+
+.or { text-align: center; margin: .8rem 0 .4rem; }
+.btn-google { display: block; text-align: center; }
+.btn-google::before { content: "G"; display: inline-block; width: 1.3em; height: 1.3em; line-height: 1.3em; margin-right: .5em; border-radius: 50%; background: #fff; color: #4285f4; font-weight: 800; }

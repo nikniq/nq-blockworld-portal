@@ -98,6 +98,8 @@ echo "24 : CACHES: refresh config/routes/views"
 echo "25 : CACHES: clear everything (when a cached value looks stale)"
 echo "26 : COMPOSER: install production dependencies"
 echo "27 : APP KEY: generate the encryption key on the server (fixes MissingAppKeyException)"
+echo "28 : PREFLIGHT: deploy dry run (what would pull and migrate)"
+echo "29 : ROLLBACK: move the server to an earlier commit or tag"
 echo ----------------------------------------------
 echo DIAGNOSE
 echo "30 : HEALTH: $APP_URL and the download page"
@@ -106,18 +108,31 @@ echo "32 : LOGS: last errors"
 echo "33 : ARTISAN: run a command (e.g. 'migrate:status')"
 echo "34 : CONFIG: key settings on the server (secrets hidden)"
 echo "35 : DISK: quota and what uploads are using"
+echo "36 : ENV: set one .env value on the server (e.g. MAIL_MAILER=smtp)"
+echo "37 : ABOUT: PHP, Laravel and driver versions on the server"
+echo "38 : GOOGLE SIGN-IN: set the OAuth client id and secret on the server"
 echo ----------------------------------------------
 echo "GAME BUILDS & CONTENT"
 echo "40 : PUBLISH BUILD: upload $GAME_DIST/* to the server and import them"
 echo "41 : RELEASES: list what is published, with download counts"
 echo "42 : STATS: players and shared worlds"
+echo "43 : PLAYERS: list recent accounts"
+echo "44 : ADMIN: grant (or revoke) admin rights to a handle"
+echo "45 : DELETE PLAYER: remove an account and its worlds  [destructive]"
 echo ----------------------------------------------
 echo MAINTENANCE
 echo "70 : VERIFY: run deploy.sh's checks on their own"
 echo "72 : MAINTENANCE MODE: on  [site goes down]"
 echo "73 : MAINTENANCE MODE: off"
 echo "74 : LOGS: truncate the Laravel log  [discards log history]"
+echo "75 : PRUNE: expired sessions, cache rows and old DB backups on the server"
+echo "76 : DB SNAPSHOT: back up the SQLite database on the server"
 echo "91 : BACKUP: pull the database and uploads to ./backup/"
+echo "92 : RESTORE: push a ./backup/<stamp> back to the server  [overwrites live data]"
+echo ----------------------------------------------
+echo LOCAL
+echo "10 : CHECK: tests + pint locally (what must pass before a push)"
+echo "11 : SERVE: run the site locally on :8000"
 echo ----------------------------------------------
 echo ACCESS
 echo "00 : CONNECT: to $REMOTE"
@@ -216,6 +231,25 @@ case "$SELECTION" in
   log_history "Generated APP_KEY on $PROJECT"
   ;;
 
+  "28" )
+  banner "PREFLIGHT: dry run on $PROJECT"
+  warn_unpushed
+  remote "./deploy.sh --check"
+  ;;
+
+  "29" )
+  banner "ROLLBACK on $PROJECT"
+  echo "Recent commits (local view of origin):"
+  git fetch -q origin 2>/dev/null
+  git log --oneline -8 origin/main 2>/dev/null || git log --oneline -8
+  echo
+  need_param "commit or tag to move the server to"
+  confirm "The server will check out $PARAM2 and run migrations. Rolling back past a migration that dropped data cannot restore that data."
+  remote_tty "./deploy.sh --to $PARAM2"
+  echo "The server is now detached from main. To resume normal deploys run: ./cx.sh 29 main"
+  log_history "Rolled $PROJECT to $PARAM2"
+  ;;
+
   #-------------------------------------------------------------
   # DIAGNOSE
   #-------------------------------------------------------------
@@ -266,6 +300,40 @@ case "$SELECTION" in
   remote "du -sh . 2>/dev/null; echo; echo 'uploads:'; du -sh storage/app/private/releases storage/app/private/games storage/app/public/avatars storage/app/public/screenshots 2>/dev/null; echo; echo 'largest directories:'; du -sh */ 2>/dev/null | sort -rh | head -10"
   ;;
 
+  "36" )
+  banner "ENV: set a value on $PROJECT"
+  need_param "KEY=VALUE"
+  case "$PARAM2" in
+    APP_KEY=*) echo "Use 27 for the app key."; exit 1 ;;
+  esac
+  remote "./deploy.sh --set '$PARAM2'"
+  log_history "Set ${PARAM2%%=*} on $PROJECT"
+  ;;
+
+  "37" )
+  banner "ABOUT $PROJECT"
+  remote "php -v | head -1; composer --version 2>/dev/null | head -1; php artisan about --only=environment,drivers 2>/dev/null || php artisan --version; echo; df -h . | tail -1"
+  ;;
+
+  "38" )
+  banner "GOOGLE SIGN-IN on $PROJECT"
+  cat <<EOT
+In the Google Cloud console (APIs & Services > Credentials) create an OAuth client
+of type "Web application" with this authorised redirect URI:
+
+    $APP_URL/auth/google/callback
+
+and, under the OAuth consent screen, publish the app (or add testers).
+Leave the id empty to turn the button off.
+EOT
+  read -r -p "Client ID: " GID
+  read -r -s -p "Client secret (hidden): " GSECRET; echo
+  remote "./deploy.sh --set 'GOOGLE_CLIENT_ID=$GID' && ./deploy.sh --set 'GOOGLE_CLIENT_SECRET=$GSECRET' && ./deploy.sh --verify | grep -i 'google\|https'"
+  echo
+  echo "Now open $APP_URL/login and try 'Continue with Google'."
+  log_history "Configured Google sign-in on $PROJECT"
+  ;;
+
   #-------------------------------------------------------------
   # GAME BUILDS & CONTENT
   #-------------------------------------------------------------
@@ -299,6 +367,28 @@ case "$SELECTION" in
   remote "php artisan portal:stats"
   ;;
 
+  "43" )
+  banner "PLAYERS on $PROJECT"
+  remote "php artisan portal:users --limit=${PARAM2:-25}"
+  ;;
+
+  "44" )
+  banner "ADMIN on $PROJECT"
+  need_param "handle (prefix with - to revoke, e.g. -bob)"
+  case "$PARAM2" in
+    -*) remote "php artisan portal:users --revoke=${PARAM2#-} --limit=5"; log_history "Revoked admin from ${PARAM2#-}" ;;
+    *)  remote "php artisan portal:users --admin=$PARAM2 --limit=5"; log_history "Granted admin to $PARAM2" ;;
+  esac
+  ;;
+
+  "45" )
+  banner "DELETE PLAYER on $PROJECT"
+  need_param "handle to delete"
+  confirm "This removes @$PARAM2, their shared worlds and uploads from $PROJECT for good. Run 91 first for a backup."
+  remote_tty "php artisan portal:users --delete=$PARAM2 --limit=5"
+  log_history "Deleted player $PARAM2 on $PROJECT"
+  ;;
+
   #-------------------------------------------------------------
   # MAINTENANCE
   #-------------------------------------------------------------
@@ -327,6 +417,18 @@ case "$SELECTION" in
   log_history "Truncated the Laravel log on $PROJECT"
   ;;
 
+  "75" )
+  banner "PRUNE on $PROJECT"
+  remote "./deploy.sh --prune"
+  log_history "Pruned $PROJECT"
+  ;;
+
+  "76" )
+  banner "DB SNAPSHOT on $PROJECT"
+  remote "./deploy.sh --backup"
+  log_history "Database snapshot on $PROJECT"
+  ;;
+
   "91" )
   banner "BACKUP: database and uploads from $PROJECT"
   # Uploaded saves, avatars and screenshots live only on the server, so they
@@ -337,6 +439,30 @@ case "$SELECTION" in
   ls -lh "./backup/$STAMP"
   echo "If the site uses MySQL rather than SQLite, dump it separately with mysqldump on the server."
   log_history "Backed up $PROJECT to backup/$STAMP"
+  ;;
+
+  "92" )
+  banner "RESTORE a backup to $PROJECT"
+  ls -1 ./backup 2>/dev/null || { echo "No ./backup directory. Run 91 first."; exit 1; }
+  need_param "backup stamp to restore (directory name above)"
+  FILE="./backup/$PARAM2/uploads-and-db.tgz"
+  [ -f "$FILE" ] || { echo "✗ $FILE not found"; exit 1; }
+  confirm "This replaces the live SQLite database and uploads on $PROJECT with $FILE. The site goes into maintenance mode while it runs."
+  remote "./deploy.sh --backup >/dev/null; php artisan down --retry=30 >/dev/null; tar xzf - && php artisan optimize:clear >/dev/null && php artisan up >/dev/null && echo 'restored'" < "$FILE"
+  log_history "Restored backup $PARAM2 to $PROJECT"
+  ;;
+
+  #-------------------------------------------------------------
+  # LOCAL
+  #-------------------------------------------------------------
+  "10" )
+  banner "CHECK: tests and pint locally"
+  php artisan test && vendor/bin/pint --test && echo "✓ ready to push"
+  ;;
+
+  "11" )
+  banner "SERVE locally"
+  php artisan serve
   ;;
 
   #-------------------------------------------------------------
@@ -358,6 +484,7 @@ case "$SELECTION" in
   $APP_SSH -t "$REMOTE" "test -d ~/$REMOTE_APP/.git && echo 'already cloned' || git clone $REPO_URL ~/$REMOTE_APP; cd ~/$REMOTE_APP && test -f .env || { cp .env.example .env && sed -i 's/^APP_ENV=.*/APP_ENV=production/; s/^APP_DEBUG=.*/APP_DEBUG=false/; s#^APP_URL=.*#APP_URL=$APP_URL#' .env; php artisan key:generate --force; }; touch database/database.sqlite; chmod +x deploy.sh; ./deploy.sh"
   echo
   echo "Now point the site's document root at ~/$REMOTE_APP/public_html and run 30."
+  echo "For 'Continue with Google', run 38 once the site answers over https."
   log_history "First deploy of $PROJECT"
   ;;
 

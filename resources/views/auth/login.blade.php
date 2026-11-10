@@ -10,6 +10,10 @@
         <label>Password <input type="password" name="password" required></label>
         <label class="check"><input type="checkbox" name="remember" value="1"> Stay logged in</label>
         <button class="btn">Log in</button>
+        @if (\App\Http\Controllers\Auth\GoogleController::enabled())
+        <p class="or muted small">or</p>
+        <a class="btn btn-ghost btn-google" href="{{ route('google.redirect') }}">Continue with Google</a>
+        @endif
         <p class="small muted">New here? <a href="{{ route('register') }}">Create a profile</a></p>
     </form>
 </div>

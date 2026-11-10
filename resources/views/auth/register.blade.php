@@ -19,6 +19,10 @@
             </select>
         </label>
         <button class="btn">Join</button>
+        @if (\App\Http\Controllers\Auth\GoogleController::enabled())
+        <p class="or muted small">or</p>
+        <a class="btn btn-ghost btn-google" href="{{ route('google.redirect') }}">Continue with Google</a>
+        @endif
         <p class="small muted">Already have an account? <a href="{{ route('login') }}">Log in</a></p>
     </form>
 </div>

@@ -8,6 +8,9 @@
         @csrf @method('PUT')
         <label>Name <input name="name" value="{{ old('name', $user->name) }}" required maxlength="60"></label>
         <label>Handle <input value="{{ $user->handle }}" disabled><small>Handles cannot be changed.</small></label>
+        @if ($user->google_id)
+        <p class="small muted">Signed in with Google ({{ $user->email }}).</p>
+        @endif
         <label>About you <textarea name="bio" maxlength="500" rows="4">{{ old('bio', $user->bio) }}</textarea></label>
         <label>I play on
             <select name="platform">
