@@ -17,6 +17,7 @@
             <a href="{{ route('games.index') }}" @class(['active' => request()->routeIs('games.*')])>Shared worlds</a>
             <a href="{{ route('profile.index') }}" @class(['active' => request()->routeIs('profile.index')])>Players</a>
             @auth
+                @if (auth()->user()->is_admin)<a href="{{ route('admin.index') }}" @class(['admin-link', 'active' => request()->routeIs('admin.*')])>Admin</a>@endif
                 <a href="{{ route('games.create') }}" class="btn btn-small">Share a world</a>
                 <a href="{{ route('profile.show', auth()->user()) }}" @class(['active' => request()->routeIs('profile.show', 'profile.edit')])>{{ auth()->user()->name }}</a>
                 <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button class="link">Log out</button></form>

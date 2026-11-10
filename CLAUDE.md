@@ -9,6 +9,8 @@ Blade under `resources/views`, styling is `public_html/css/app.css`.
   (needs `php artisan storage:link`).
 - Login is email+password or Google (Socialite, `GoogleController`; button only when `GOOGLE_CLIENT_ID`
   is set; Google-only users have a null password).
+- Admin area under `/admin` (`admin` middleware alias → `EnsureAdmin`, controllers in `App\Http\Controllers\Admin`,
+  views in `resources/views/admin`). First admin via `php artisan portal:users --admin=<handle>`.
 - Models: `User` (routed by `handle`), `Release`, `SharedGame` (routed by `slug`, owner checks in
   `SharedGamePolicy`). Platform and mode option lists are constants on `User` and `SharedGame`.
 

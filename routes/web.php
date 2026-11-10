@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GameController;
+use App\Http\Controllers\Admin\ReleaseController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -39,4 +43,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/games/{game}/edit', [SharedGameController::class, 'edit'])->name('games.edit');
     Route::put('/games/{game}', [SharedGameController::class, 'update'])->name('games.update');
     Route::delete('/games/{game}', [SharedGameController::class, 'destroy'])->name('games.destroy');
+});
+
+Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', DashboardController::class)->name('index');
+    Route::get('/players', [UserController::class, 'index'])->name('users');
+    Route::post('/players/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.admin');
+    Route::delete('/players/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/worlds', [GameController::class, 'index'])->name('games');
+    Route::delete('/worlds/{game}', [GameController::class, 'destroy'])->name('games.destroy');
+    Route::get('/releases', [ReleaseController::class, 'index'])->name('releases');
+    Route::put('/releases/{release}', [ReleaseController::class, 'update'])->name('releases.update');
+    Route::delete('/releases/{release}', [ReleaseController::class, 'destroy'])->name('releases.destroy');
 });

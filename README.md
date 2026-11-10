@@ -19,6 +19,14 @@ plain Blade and a single stylesheet (no Node build step).
 
 Owners (and users with `is_admin`) can edit or remove their worlds.
 
+## Admin area
+
+`/admin` (link in the header for admins): overview with player/world/download counts, server facts
+(environment, debug, Google sign-in, PHP, log size) and the latest log errors; players (search, grant
+or revoke admin, delete with their uploads); shared worlds (search, edit, remove); releases (notes,
+withdraw, file-present check). Make the first admin from the server: `php artisan portal:users --admin=<handle>`
+(or `./cx.sh 44 <handle>`).
+
 ## Setup
 
 ```bash
